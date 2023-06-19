@@ -16,8 +16,8 @@ int main(){
         std::cout << "coninue? ";
         std::cin >> a;
 
-        f->invSub(200);
-        f->invSubSIMD(200);
+        f->div(2);
+        f->divSIMD(2);
         f->write();
 
         delete f;
