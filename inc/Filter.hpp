@@ -6,7 +6,6 @@
 #include <boost/align/aligned_allocator.hpp>
 
 
-/* TODO: replace with actual allocator in hpp files, since this might not exist */
 template <typename T>
 using aligned_vector = std::vector<T, boost::alignment::aligned_allocator<T, 32>>;
 
@@ -35,6 +34,23 @@ public:
         void invDiv(uint8_t);
         void invDivSIMD(uint8_t);
 
+        void min(uint8_t);
+        void minSIMD(uint8_t);
+
+        void max(uint8_t);
+        void maxSIMD(uint8_t);
+
+        void log();
+        void logSIMD();
+
+        void abs();
+        void absSIMD();
+
+        void invert();
+        void invertSIMD();
+
+        void grayscale();
+        void grayscaleSIMD();
 protected:
         void __init_vector(int color, aligned_vector<uint8_t>& vec);
         void __merge_vectors();

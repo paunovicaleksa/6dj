@@ -4,21 +4,21 @@
 
 int main(){ 
 
-        Filter *f = new Filter("./img/bg1.png");
+        Filter *f = new Filter("./img/leave.jpg");
         if(f->load()){
                 exit(1);
         }
-        f->mul(200);
-        f->mulSIMD(200);
+        //f->add(200);
+        f->grayscaleSIMD();
         f->write();
         
         int a;
         std::cout << "coninue? ";
         std::cin >> a;
 
-        //f->div(2);
-        f->divSIMD(2);
-        f->write();
+        //f->min(100);
+        //f->minSIMD(100);
+        //f->write();
 
         delete f;
 }
