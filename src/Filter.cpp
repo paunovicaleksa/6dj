@@ -5,31 +5,13 @@
 #include "../inc/stb_image_write.h"
 #include "../inc/Filter.hpp"
 #include "../inc/_Timer.hpp"
-
-#include <emmintrin.h>
-#include <immintrin.h>
+#include "../inc/SIMD.hpp"
 
 #define RED 0
 #define GREEN 1
 #define BLUE 2
 #define ALPHA 3
 
-
-inline __m256i _mm256_mullo_epi8(__m256i a, __m256i b){
-    // unpack and multiply
-    __m256i dst_even = _mm256_mullo_epi16(a, b);
-    __m256i dst_odd = _mm256_mullo_epi16(_mm256_srli_epi16(a, 8),_mm256_srli_epi16(b, 8));
-    // repack
-
-    // only faster if have access to VPBROADCASTW
-     return _mm256_or_si256(_mm256_slli_epi16(dst_odd, 8), _mm256_and_si256(dst_even, _mm256_set1_epi16(0xff)));
-
-}
-
-inline __m256i _mm256_div_epi8(__m256i a, __m256i b){
-
-        return a;
-}
 
 
 inline bool __str_ends_in(std::string str, std::string ends){
@@ -295,7 +277,7 @@ void Filter::divSIMD(uint8_t val){
 
         int32_t loop_size = ((width * height) / 32 ) * 32;
 
-        __m256i v_val =  _mm256_set1_epi8(1/val); //sets 32 members of vval to val
+        __m256i v_val =  _mm256_set1_epi8(val); //sets 32 members of vval to val
 
         for(int32_t i = 0; i < loop_size; i += 32){
                
@@ -305,9 +287,9 @@ void Filter::divSIMD(uint8_t val){
 
                 __m256i v_blue =_mm256_loadu_si256((__m256i*)&blue[i]);
                
-                v_red = _mm256_mullo_epi8( v_val, v_red);
-                v_green = _mm256_mullo_epi8(v_val, v_green);
-                v_blue = _mm256_mullo_epi8(v_val, v_blue);
+                v_red = _mm256_div_epi8 (v_red, v_val);
+                v_green = _mm256_div_epi8(v_green, v_val);
+                v_blue = _mm256_div_epi8(v_red, v_val);
 
                 _mm256_store_si256 ((__m256i*)&red[i],  v_red);
                 _mm256_store_si256 ((__m256i*)&green[i],  v_green);
