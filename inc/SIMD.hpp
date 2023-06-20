@@ -70,3 +70,19 @@ __m256i _mm256_div_epi8(__m256i a, __m256i b){
         
         return _mm256_cvtepi32_epu8(i_res);
 }
+
+inline  __attribute__((always_inline)) 
+__m256i _mm256_log_epi8(__m256i a, __m256i c){
+        __m256i dst_a[4];
+        __m256i dst_c[4];
+
+        _mm256_splitpu8_epi32(dst_a, a);
+        _mm256_splitpu8_epi32(dst_c, c);
+
+        __m256i log_a[4];
+
+        for(int32_t i = 0; i < 4; i++){
+                /* TODO: call log for a, multiply with constant, convert back to m256i and return */
+        }
+
+}

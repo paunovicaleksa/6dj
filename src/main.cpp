@@ -4,12 +4,12 @@
 
 int main(){ 
 
-        Filter *f = new Filter("./img/leave.jpg");
+        Filter *f = new Filter("./img/bg1.png");
         if(f->load()){
                 exit(1);
         }
-        //f->add(200);
-        f->grayscaleSIMD();
+        f->addSIMD(200);
+        //f->log();
         f->write();
         
         int a;

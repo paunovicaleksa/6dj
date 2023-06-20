@@ -55,7 +55,7 @@ int Filter::load(){
                 std::cout << "Error loading image";
                 return 1;
         }
-        
+
         size = width * height * channels;
 
         __init_vector(RED, red);
@@ -580,7 +580,59 @@ void Filter::grayscaleSIMD(){
                 _mm256_store_si256 ((__m256i*)&red[i],  v_i);
                 _mm256_store_si256 ((__m256i*)&green[i],  v_i);
                 _mm256_store_si256 ((__m256i*)&blue[i],  v_i);
+        }
 
+        for(int32_t i = loop_size; i < width*height; i++){
+                float R = red[i] * g_constant;
+                float G = green[i] * g_constant;
+                float B = blue[i] * g_constant;
+
+                uint8_t I = (R + G + B);
+
+                red[i] = green[i] = blue[i] = I;
+        } 
+
+        EndTimer
+}
+
+void Filter::log(){
+        StartTimer(LOG NO SIMD)
+
+        uint8_t c  = 255 / std::log(255);
+
+        for(int32_t i = 0; i < width * height; i++){
+                red[i] = c * std::log(red[i] + 1);
+                green[i] = c * std::log(green[i] + 1) ;
+                blue[i] = c * std::log(blue[i] + 1);
+        }
+
+        EndTimer    
+}
+
+void Filter::logSIMD(){
+        StartTimer(LOG SIMD)
+       
+        int32_t loop_size = ((width * height) / 32 ) * 32;
+       
+        uint8_t c  = 255 / std::log(255);
+
+        __m256i v_c =  _mm256_set1_epi8(c); //sets 32 members of vval to val
+
+        for(int32_t i = 0; i < loop_size; i += 32){
+               
+                __m256i v_red = _mm256_loadu_si256((__m256i*)&red[i]);
+
+                __m256i v_green = _mm256_loadu_si256((__m256i*)&green[i]);
+
+                __m256i v_blue =_mm256_loadu_si256((__m256i*)&blue[i]);
+               
+                v_red = _mm256_log_epi8(v_red, v_c);
+                v_green = _mm256_log_epi8(v_green, v_c);
+                v_blue = _mm256_log_epi8(v_blue, v_c);
+
+                _mm256_store_si256 ((__m256i*)&red[i],  v_red);
+                _mm256_store_si256 ((__m256i*)&green[i],  v_green);
+                _mm256_store_si256 ((__m256i*)&blue[i],  v_blue);
         }
 
         EndTimer
