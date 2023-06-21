@@ -3,7 +3,7 @@ SRC_DIR = src
 OBJ_DIR = obj
 CXX = g++
 CXX_FLAGS = -I$(INC_DIR)
-CXX_FLAGS += -march=native
+CXX_FLAGS += -march=native -O2
 
 SRC = $(wildcard $(SRC_DIR)/*.cpp)
 DEP = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.d, $(SRC))

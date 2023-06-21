@@ -5,6 +5,8 @@
 #include <vector>
 #include <boost/align/aligned_allocator.hpp>
 
+#ifndef FILTER_HPP
+#define FILTER_HPP
 
 template <typename T>
 using aligned_vector = std::vector<T, boost::alignment::aligned_allocator<T, 32>>;
@@ -51,6 +53,13 @@ public:
 
         void grayscale();
         void grayscaleSIMD();
+        
+        void pow(int32_t);
+        void powSIMD(int32_t);
+
+        void filter(int32_t* GX, int32_t* GY);
+        void filterOptimized(int32_t* GX, int32_t* GY);
+
 protected:
         void __init_vector(int color, aligned_vector<uint8_t>& vec);
         void __merge_vectors();
@@ -63,3 +72,5 @@ private:
         aligned_vector<uint8_t> red, green, blue;
         aligned_vector<uint8_t> alpha;
 };      
+
+#endif

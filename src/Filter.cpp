@@ -6,13 +6,14 @@
 #include "../inc/Filter.hpp"
 #include "../inc/_Timer.hpp"
 #include "../inc/SIMD.hpp"
+#include "../inc/CPU.hpp"
 #include <cstdlib>
+#include <algorithm>
 
 #define RED 0
 #define GREEN 1
 #define BLUE 2
 #define ALPHA 3
-
 
 
 inline bool __str_ends_in(std::string str, std::string ends){
@@ -523,11 +524,11 @@ void Filter::invertSIMD(){
 void Filter::grayscale(){
         StartTimer(GRAYSCALE NO SIMD)
 
-        float g_constant = 1./3;
+        _Float32 g_constant = 1./3;
         for(int32_t i = 0; i < width * height; i++){
-                float R = red[i] * g_constant;
-                float G = green[i] * g_constant;
-                float B = blue[i] * g_constant;
+                _Float32 R = red[i] * g_constant;
+                _Float32 G = green[i] * g_constant;
+                _Float32 B = blue[i] * g_constant;
 
                 uint8_t I = (R + G + B);
 
@@ -539,7 +540,7 @@ void Filter::grayscale(){
 
 void Filter::grayscaleSIMD(){
         StartTimer(GRAYSCALE SIMD)
-        float g_constant = 1./3;
+        _Float32 g_constant = 1./3;
 
         int32_t loop_size = ((width * height) / 32 ) * 32;
         __m256 v_gray = _mm256_set1_ps(g_constant);
@@ -583,9 +584,9 @@ void Filter::grayscaleSIMD(){
         }
 
         for(int32_t i = loop_size; i < width*height; i++){
-                float R = red[i] * g_constant;
-                float G = green[i] * g_constant;
-                float B = blue[i] * g_constant;
+                _Float32 R = red[i] * g_constant;
+                _Float32 G = green[i] * g_constant;
+                _Float32 B = blue[i] * g_constant;
 
                 uint8_t I = (R + G + B);
 
@@ -614,9 +615,9 @@ void Filter::logSIMD(){
        
         int32_t loop_size = ((width * height) / 32 ) * 32;
        
-        uint8_t c  = 255 / std::log(255);
+        _Float32 c  = 255 / std::log(255);
 
-        __m256i v_c =  _mm256_set1_epi8(c); //sets 32 members of vval to val
+        __m256 v_c = _mm256_set1_ps(c);
 
         for(int32_t i = 0; i < loop_size; i += 32){
                
@@ -635,7 +636,171 @@ void Filter::logSIMD(){
                 _mm256_store_si256 ((__m256i*)&blue[i],  v_blue);
         }
 
+        for(int32_t i = loop_size; i < width*height; i++){
+                red[i] = c * std::log(red[i] + 1);
+                green[i] = c * std::log(green[i] + 1) ;
+                blue[i] = c * std::log(blue[i] + 1);            
+        } 
+
         EndTimer
+}
+
+void Filter::pow(int32_t val){
+        StartTimer(POW NO SIMD)
+        
+        double_t min = 0;
+        double_t max = 255;
+        int16_t p_16;
+
+        for(int32_t i = 0; i < width * height; i++){
+                /* since downward conversion is undefined, make it behave like SIMD implementation */
+                p_16 = std::pow(red[i], val);
+                red[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));
+                p_16 = std::pow(green[i], val);
+                green[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));
+                p_16 = std::pow(blue[i], val);
+                blue[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));
+        }
+
+        EndTimer     
+}
+
+void Filter::powSIMD(int32_t val){
+        StartTimer(POW SIMD)
+       
+        int32_t loop_size = ((width * height) / 32 ) * 32;
+        double_t min = 0;
+        double_t max = 255;
+       
+        __m256i v_val = _mm256_set1_epi32(val);
+
+        for(int32_t i = 0; i < loop_size; i += 32){
+               
+                __m256i v_red = _mm256_loadu_si256((__m256i*)&red[i]);
+
+                __m256i v_green = _mm256_loadu_si256((__m256i*)&green[i]);
+
+                __m256i v_blue =_mm256_loadu_si256((__m256i*)&blue[i]);
+               
+                v_red = _mm256_pow_epi8(v_red, v_val);
+                v_green = _mm256_pow_epi8(v_green, v_val);
+                v_blue = _mm256_pow_epi8(v_blue, v_val);
+
+                _mm256_store_si256 ((__m256i*)&red[i],  v_red);
+                _mm256_store_si256 ((__m256i*)&green[i],  v_green);
+                _mm256_store_si256 ((__m256i*)&blue[i],  v_blue);
+        }
+
+        for(int32_t i = loop_size; i < width*height; i++){
+                red[i] = std::clamp(std::pow(red[i], val), min, max);
+                green[i] = std::clamp(std::pow(green[i], val), min, max);
+                blue[i] = std::clamp(std::pow(blue[i], val), min, max);        
+        } 
+
+        EndTimer
+}
+
+void Filter::filter(int32_t* GX, int32_t* GY){
+        int32_t rows = height;
+        int32_t columns = width * channels;
+        std::vector<uint8_t> edges((rows * columns), 0);
+
+        StartTimer(FILTER NO OPT)
+        
+        for (int32_t row = 1; row < ( rows - 1 ); ++row ) {
+                for (int32_t column = 1; column < ( columns - 1 ); ++column ) {
+                        double_t gx = 0;
+                        double_t gy = 0;
+
+                        for (int32_t i = 0; i < 3; ++i ) {
+                                for (int32_t j = 0; j < 3; ++j ) {
+                                        int32_t image_row    = row + i - 1;
+                                        int32_t image_column = column + j - 1;
+
+                                        int32_t image_index = image_row * columns + image_column;
+                                        int32_t index = image_index/channels;
+
+                                        double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
+
+                                        int32_t kernel_index = i * 3 + j;
+
+                                        gx += image_value * GX[kernel_index];
+                                        gy += image_value * GY[kernel_index];
+                                }
+                        }
+
+                        edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));
+                }
+        }
+
+        EndTimer
+
+        stbi_image_free(img);
+        img = &edges[0];
+        
+        red.clear();
+        blue.clear();
+        green.clear();
+
+        __init_vector(RED, red);
+        __init_vector(GREEN, green);
+        __init_vector(BLUE, blue);
+
+        write();
+}
+
+void Filter::filterOptimized(int32_t* GX, int32_t* GY){
+        int32_t rows = height;
+        int32_t columns = width * channels;
+        std::vector<uint8_t> edges((rows * columns), 0);
+        int32_t BLOCK_SIZE = CPU::getBlockSize();
+
+        StartTimer(FILTER OPT)
+
+        for(int32_t block = 0; block < (columns / BLOCK_SIZE); block++){
+                for(int32_t row = 1; row < (rows - 1); row++){
+                        for(int32_t column = (block * BLOCK_SIZE); column < (columns - 1) 
+                        && column < ((block + 1) * BLOCK_SIZE); column++){
+                        double_t gx = 0;
+                        double_t gy = 0;
+
+                        for (int32_t i = 0; i < 3; ++i ) {
+                                for (int32_t j = 0; j < 3; ++j ) {
+                                        int32_t image_row    = row + i - 1;
+                                        int32_t image_column = column + j - 1;
+
+                                        int32_t image_index = image_row * columns + image_column;
+                                        int32_t index = image_index/channels;
+
+                                        double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
+
+                                        int32_t kernel_index = i * 3 + j;
+
+                                        gx += image_value * GX[kernel_index];
+                                        gy += image_value * GY[kernel_index];
+                                }
+                        }
+
+                        edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));       
+                        }
+                }
+        }
+
+        EndTimer
+
+        stbi_image_free(img);
+        img = &edges[0];
+        
+        red.clear();
+        blue.clear();
+        green.clear();
+
+        __init_vector(RED, red);
+        __init_vector(GREEN, green);
+        __init_vector(BLUE, blue);
+
+        write();
+
 }
 
 void Filter::write(){
@@ -645,6 +810,8 @@ void Filter::write(){
         std::uint64_t pos = file_name.rfind('.');
         std::string write_name = file_name.substr(0, pos) + "_modified"; 
 
+        std::cout << "writing image-";
+
         if(__str_ends_in(file_name.c_str(), ".jpg") || __str_ends_in(file_name.c_str(), ".JPG") || 
            __str_ends_in(file_name.c_str(), ".jpeg") || __str_ends_in(file_name.c_str(), ".JPEG")) {
                 write_name += ".jpg";
@@ -653,6 +820,11 @@ void Filter::write(){
         } else if(__str_ends_in(file_name.c_str(), ".png") || __str_ends_in(file_name.c_str(), ".PNG")) {
                 write_name += ".png";
                 stbi_write_png(write_name.c_str(), width, height, channels, img, width * channels);
-        } 
+        } else{
+                std::cout << "failed" << std::endl;
+                return;
+        }
+
+        std::cout << "done" << std::endl;
 }
 
