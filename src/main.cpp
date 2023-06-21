@@ -11,7 +11,7 @@ int main(){
         if(f->load()){
                 exit(1);
         }
-        f->filterOptimized(GX, GY);
+        f->filter(GX, GY);
         //f->min(100);
         //f->minSIMD(100);
         //f->write();

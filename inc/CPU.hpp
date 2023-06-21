@@ -10,5 +10,4 @@ public:
         /* extend if necessary */
 };
 
-
 #endif

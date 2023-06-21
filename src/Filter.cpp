@@ -703,12 +703,18 @@ void Filter::powSIMD(int32_t val){
 void Filter::filter(int32_t* GX, int32_t* GY){
         int32_t rows = height;
         int32_t columns = width * channels;
-        std::vector<uint8_t> edges((rows * columns), 0);
+        aligned_vector<uint8_t> edges_red;
+        aligned_vector<uint8_t> edges_blue;
+        aligned_vector<uint8_t> edges_green;
+
+        edges_red.reserve(width * height);
+        edges_blue.reserve(width * height);
+        edges_green.reserve(width * height);
 
         StartTimer(FILTER NO OPT)
         
         for (int32_t row = 1; row < ( rows - 1 ); ++row ) {
-                for (int32_t column = 1; column < ( columns - 1 ); ++column ) {
+                for (int32_t column = 1; column < ( width - 1 ); ++column ) {
                         double_t gx = 0;
                         double_t gy = 0;
 
@@ -717,8 +723,8 @@ void Filter::filter(int32_t* GX, int32_t* GY){
                                         int32_t image_row    = row + i - 1;
                                         int32_t image_column = column + j - 1;
 
-                                        int32_t image_index = image_row * columns + image_column;
-                                        int32_t index = image_index/channels;
+                                        int32_t index = image_row * width + image_column;
+                                        //int32_t index = image_index/channels;
 
                                         double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
 
@@ -728,24 +734,18 @@ void Filter::filter(int32_t* GX, int32_t* GY){
                                         gy += image_value * GY[kernel_index];
                                 }
                         }
-
-                        edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));
+                        int32_t index = row * width + column;
+                        edges_red[index] = edges_green[index] = edges_blue[index] = (sqrt ( gx * gx + gy * gy ));
+                        
                 }
         }
 
         EndTimer
 
-        stbi_image_free(img);
-        img = &edges[0];
+        red = std::move(edges_red);
+        green = std::move(edges_green);
+        blue = std::move(edges_blue);
         
-        red.clear();
-        blue.clear();
-        green.clear();
-
-        __init_vector(RED, red);
-        __init_vector(GREEN, green);
-        __init_vector(BLUE, blue);
-
         write();
 }
 
@@ -761,27 +761,27 @@ void Filter::filterOptimized(int32_t* GX, int32_t* GY){
                 for(int32_t row = 1; row < (rows - 1); row++){
                         for(int32_t column = (block * BLOCK_SIZE); column < (columns - 1) 
                         && column < ((block + 1) * BLOCK_SIZE); column++){
-                        double_t gx = 0;
-                        double_t gy = 0;
+                                double_t gx = 0;
+                                double_t gy = 0;
 
-                        for (int32_t i = 0; i < 3; ++i ) {
-                                for (int32_t j = 0; j < 3; ++j ) {
-                                        int32_t image_row    = row + i - 1;
-                                        int32_t image_column = column + j - 1;
+                                for (int32_t i = 0; i < 3; ++i ) {
+                                        for (int32_t j = 0; j < 3; ++j ) {
+                                                int32_t image_row    = row + i - 1;
+                                                int32_t image_column = column + j - 1;
 
-                                        int32_t image_index = image_row * columns + image_column;
-                                        int32_t index = image_index/channels;
+                                                int32_t image_index = image_row * columns + image_column;
+                                                int32_t index = image_index/channels;
 
-                                        double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
+                                                double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
 
-                                        int32_t kernel_index = i * 3 + j;
+                                                int32_t kernel_index = i * 3 + j;
 
-                                        gx += image_value * GX[kernel_index];
-                                        gy += image_value * GY[kernel_index];
+                                                gx += image_value * GX[kernel_index];
+                                                gy += image_value * GY[kernel_index];
+                                        }
                                 }
-                        }
 
-                        edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));       
+                                edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));       
                         }
                 }
         }
