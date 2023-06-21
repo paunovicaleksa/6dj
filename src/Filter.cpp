@@ -745,21 +745,26 @@ void Filter::filter(int32_t* GX, int32_t* GY){
         red = std::move(edges_red);
         green = std::move(edges_green);
         blue = std::move(edges_blue);
-        
-        write();
 }
 
+/* FIX TOMORROW */
 void Filter::filterOptimized(int32_t* GX, int32_t* GY){
         int32_t rows = height;
         int32_t columns = width * channels;
-        std::vector<uint8_t> edges((rows * columns), 0);
+        aligned_vector<uint8_t> edges_red;
+        aligned_vector<uint8_t> edges_blue;
+        aligned_vector<uint8_t> edges_green;
+
+        edges_red.reserve(width * height);
+        edges_blue.reserve(width * height);
+        edges_green.reserve(width * height);
         int32_t BLOCK_SIZE = CPU::getBlockSize();
 
         StartTimer(FILTER OPT)
 
-        for(int32_t block = 0; block < (columns / BLOCK_SIZE); block++){
+        for(int32_t block = 0; block < (width / BLOCK_SIZE); block++){
                 for(int32_t row = 1; row < (rows - 1); row++){
-                        for(int32_t column = (block * BLOCK_SIZE); column < (columns - 1) 
+                        for(int32_t column = (block * BLOCK_SIZE); column < (width - 1) 
                         && column < ((block + 1) * BLOCK_SIZE); column++){
                                 double_t gx = 0;
                                 double_t gy = 0;
@@ -768,10 +773,8 @@ void Filter::filterOptimized(int32_t* GX, int32_t* GY){
                                         for (int32_t j = 0; j < 3; ++j ) {
                                                 int32_t image_row    = row + i - 1;
                                                 int32_t image_column = column + j - 1;
-
-                                                int32_t image_index = image_row * columns + image_column;
-                                                int32_t index = image_index/channels;
-
+                                                
+                                                int32_t index = image_row * width + image_column;
                                                 double_t image_value = (double_t)(red[index] + green[index] + blue[index])/3;
 
                                                 int32_t kernel_index = i * 3 + j;
@@ -780,26 +783,18 @@ void Filter::filterOptimized(int32_t* GX, int32_t* GY){
                                                 gy += image_value * GY[kernel_index];
                                         }
                                 }
-
-                                edges[row * columns + column] = (uint8_t)(sqrt ( gx * gx + gy * gy ));       
+                                int32_t index = row * width + column;
+                                edges_red[index] = edges_green[index] = edges_blue[index] = (sqrt ( gx * gx + gy * gy ));  
                         }
+
                 }
         }
 
         EndTimer
 
-        stbi_image_free(img);
-        img = &edges[0];
-        
-        red.clear();
-        blue.clear();
-        green.clear();
-
-        __init_vector(RED, red);
-        __init_vector(GREEN, green);
-        __init_vector(BLUE, blue);
-
-        write();
+        red = std::move(edges_red);
+        green = std::move(edges_green);
+        blue = std::move(edges_blue);
 
 }
 

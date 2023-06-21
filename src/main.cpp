@@ -1,19 +1,16 @@
 #include <iostream>
 #include "../inc/Filter.hpp"
 #include "../inc/CPU.hpp"
+#include "../inc/Parser.hpp"
+#include <getopt.h>
 
-int main(){ 
-        std::cout << CPU::getBlockSize() << std::endl;
-        int GX[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
-        int GY[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 };
-        
-        Filter *f = new Filter("./img/sofija1.png");
-        if(f->load()){
+int main(int argc, char* argv[]){
+
+        if(argc < 2){
+                std::cout << "this requires at least some arguments!" << std::endl;
                 exit(1);
         }
-        f->filter(GX, GY);
-        //f->min(100);
-        //f->minSIMD(100);
-        //f->write();
+        Parser::parse(argc, argv);
 
+        return 0;
 }
