@@ -1,8 +1,8 @@
 #include <iostream>
-#include "../inc/Filter.hpp"
-#include "../inc/CPU.hpp"
 #include "../inc/Parser.hpp"
-#include <getopt.h>
+#include "../inc/Arithmetic.hpp"
+#include "../inc/MathFunc.hpp"
+#include "../inc/Filters.hpp"
 
 int main(int argc, char* argv[]){
 
@@ -11,6 +11,8 @@ int main(int argc, char* argv[]){
                 exit(1);
         }
         Parser::parse(argc, argv);
+     
+
 
         return 0;
 }

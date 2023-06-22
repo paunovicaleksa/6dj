@@ -1,11 +1,10 @@
+#ifndef SIMD_HPP
+#define SIMD_HPP
+
 
 #include <emmintrin.h>
 #include <immintrin.h>
 #include "avx_mathfun.h"
-
-#ifndef SIMD_HPP
-#define SIMD_HPP
-
 
 static inline  __attribute__((always_inline)) 
 __m256i _mm256_mullo_epi8(__m256i a, __m256i b){

@@ -1,5 +1,8 @@
 #include "../inc/Parser.hpp"
-
+#include "../inc/Image.hpp"
+#include "../inc/Arithmetic.hpp"
+#include "../inc/Filters.hpp"
+#include "../inc/MathFunc.hpp"
 
 static const struct option longopts[] = {
         {"help", no_argument, 0, 'h'},
@@ -18,18 +21,20 @@ static const struct option longopts[] = {
         {"invert", no_argument, 0, 'v'},
         {"grayscale", no_argument, 0, 'g'},
         {"filter", required_argument, 0, 'f'},/* argument here is N, the size of kernel to be applied */
-        {"test", required_argument, 0, 'q'}
+        {"test", no_argument, 0, 'q'}
 };
 /* i was very tired when i wrote this */
 int Parser::parse(int32_t argc, char* argv[]){
                      
-        Filter *f = nullptr;
+        Image* src = nullptr;
+        Image *dst_no_opt = nullptr;
+        Image *dst_opt = nullptr;
 
         int index;
         int iarg = 0;
 
         while(iarg != -1){
-                iarg = getopt_long(argc, argv, "ht:a:s:i:m:d:n:p:lx:z:bvgf:q:", longopts, &index);
+                iarg = getopt_long(argc, argv, "ht:a:s:i:m:d:n:p:lx:z:bvgf:q", longopts, &index);
 
                 switch (iarg)
                 {       
@@ -39,127 +44,145 @@ int Parser::parse(int32_t argc, char* argv[]){
                         }
                         case 't':{
                                 std::string filename = optarg;
-                                f = new Filter(filename.c_str());
-                                if(f->load()){
+                                src = new Image(filename.c_str());
+                                if(src->load()){
                                         return 1;
                                 }
+                                std::uint64_t pos = filename.rfind('.');
+                                std::string write_name = filename.substr(0, pos) + "_modified_no_opt";
+                                dst_no_opt = new Image(write_name.c_str(), src->getWidth(), src->getHeight(), src->getChannels());
+                                write_name = filename.substr(0, pos) + "_modified_opt";
+                                dst_opt = new Image(write_name.c_str(), src->getWidth(), src->getHeight(), src->getChannels());
                                 break;
                         }
                         case 'a':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->addSIMD(arg);
+                                Arithmetic::add(src, dst_no_opt, arg);
+                                Arithmetic::addSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 's':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->subSIMD(arg);
+                                Arithmetic::sub(src, dst_no_opt, arg);
+                                Arithmetic::subSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'i':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->invSubSIMD(arg);
+                                Arithmetic::invSub(src, dst_no_opt, arg);
+                                Arithmetic::invSubSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'm':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->mulSIMD(arg);
+                                Arithmetic::mul(src, dst_no_opt, arg);
+                                Arithmetic::mulSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'd':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->divSIMD(arg);
+                                Arithmetic::div(src, dst_no_opt, arg);
+                                Arithmetic::divSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'n':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->invDivSIMD(arg);
+                                Arithmetic::invDiv(src, dst_no_opt, arg);
+                                Arithmetic::invDivSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'p':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->powSIMD(arg);
+                                MathFunc::pow(src, dst_no_opt, arg);
+                                MathFunc::powSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'l':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
-                                f->logSIMD();
+                                MathFunc::log(src, dst_no_opt);
+                                MathFunc::logSIMD(src, dst_opt);
                                 break;
                         }
                         case 'x':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->maxSIMD(arg);
+                                MathFunc::max(src, dst_no_opt, arg);
+                                MathFunc::maxSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'z':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
                                 uint8_t arg = std::stoi(optarg);
-                                f->minSIMD(arg);
+                                MathFunc::min(src, dst_no_opt, arg);
+                                MathFunc::minSIMD(src, dst_opt, arg);
                                 break;
                         }
                         case 'b':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
-                                f->absSIMD();
+                                MathFunc::abs(src, dst_no_opt);
+                                MathFunc::absSIMD(src, dst_opt);
                                 break;
                         }
                         case 'v':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
-                                f->invertSIMD();
+                                Filters::invert(src, dst_no_opt);
+                                Filters::invertSIMD(src, dst_opt);
                                 break;
                         }
                         case 'g':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
-                                f->grayscaleSIMD();
+                                Filters::grayscale(src, dst_no_opt);
+                                Filters::grayscaleSIMD(src, dst_opt);
                                 break;
                         }
                         case 'f':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
@@ -177,25 +200,29 @@ int Parser::parse(int32_t argc, char* argv[]){
                                 for(int32_t i = 0; i < N * N; i++){
                                         std::cin >> GY[i];
                                 }
-
-                                f->filterOptimized(GX, GY);
+                                Filters::applyKernel(src, dst_no_opt, GX, GY, N);                                  
+                                Filters::applyOptimizedKernel(src, dst_no_opt, GX, GY, N);       
                                 delete[] GX;
                                 delete[] GY;
                                 break;
                         }
                         case 'q':{
-                                if(f == nullptr){
+                                if(src == nullptr){
                                         printHelp();
                                         return 1;
                                 }
-                                std::string test_name = optarg;
-                                test(test_name, f);
+                                test("all", src);
                                 break;
                         }
                 }
         }
-        f->write();
-        delete f;
+        
+        dst_no_opt->write();
+        dst_opt->write();
+
+        delete src;
+        delete dst_no_opt;
+        delete dst_opt;
         return 0;
 }
 
@@ -216,57 +243,61 @@ void Parser::printHelp(){
         std::cerr <<"\t--invert -v\t\tinvert every color component by calculating 255 - color_component" << std::endl;
         std::cerr <<"\t--grayscale -g\t\tsets every color component to the average of neighboring components" << std::endl;
         std::cerr <<"\t--filter -f\t[arg] [1D input arrays]\tapply filter to the color component and its neighbors" << std::endl;
-        std::cerr <<"\t--test -q\t[arg]\trun tests for function named arg, \"all\" for testing everything" << std::endl;
+        std::cerr <<"\t--test -q\t\trun tests for everything" << std::endl;
         std::cerr <<"\t--help -h\t\tprint this help and exit" << std::endl;
 }
 
-void test_all(Filter *f){
-        f->add(100);
-        f->addSIMD(100);
 
-        f->sub(100);
-        f->subSIMD(100);
+void Parser::test(std::string test_name, Image* src){
 
-        f->mul(2);
-        f->mulSIMD(2);
+        Image *dst_no_opt = new Image("test_no_opt", src->getWidth(), src->getHeight(), src->getChannels());
+        Image *dst_opt = new Image("test_opt", src->getWidth(), src->getHeight(), src->getChannels());
 
-        f->div(2);
-        f->divSIMD(2);
+        Arithmetic::add(src, dst_no_opt, 100);
+        Arithmetic::addSIMD(src, dst_opt, 100);
+        
+        Arithmetic::sub(src, dst_no_opt, 100);
+        Arithmetic::subSIMD(src, dst_opt, 100);
 
-        f->invDiv(3);
-        f->invDivSIMD(3);
+        Arithmetic::mul(src, dst_no_opt, 2);
+        Arithmetic::mulSIMD(src, dst_opt, 2);
+        
+        Arithmetic::div(src, dst_no_opt, 2);
+        Arithmetic::divSIMD(src, dst_opt, 2);
 
-        f->pow(2);
-        f->powSIMD(2);
+        Arithmetic::invDiv(src, dst_no_opt, 250);
+        Arithmetic::invDivSIMD(src, dst_opt, 250);
+        
+        MathFunc::pow(src, dst_no_opt, 2);
+        MathFunc::powSIMD(src, dst_opt, 2);
 
-        f->log();
-        f->logSIMD();
+        MathFunc::log(src, dst_no_opt);
+        MathFunc::logSIMD(src, dst_opt);
 
-        f->max(100);
-        f->maxSIMD(100);
+        MathFunc::max(src, dst_no_opt, 128);
+        MathFunc::maxSIMD(src, dst_opt, 128);
 
-        f->min(100);
-        f->minSIMD(100);
+        MathFunc::min(src, dst_no_opt, 128);
+        MathFunc::minSIMD(src, dst_opt, 128);
 
-        f->abs();
-        f->absSIMD();
+        MathFunc::abs(src, dst_no_opt);
+        MathFunc::absSIMD(src, dst_opt);
 
-        f->invert();
-        f->invertSIMD();
+        Filters::grayscale(src, dst_no_opt);
+        Filters::grayscaleSIMD(src, dst_opt);
 
-        f->grayscale();
-        f->grayscaleSIMD();
+        Filters::invert(src, dst_no_opt);
+        Filters::invertSIMD(src, dst_opt);
 
         int32_t N = 3;
-        int32_t GX[] = { -1, 0, 1, -2, 0, 2, -1, 0, 1 };
-        int32_t GY[] = { -1, -2, -1, 0, 0, 0, 1, 2, 1 }; 
+        int32_t GX[] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
+        int32_t GY[] = {-1, -2, -1, 0, 0, 0, 1, 2, 1}; 
         
-        f->filter(GX, GY);
-        f->filterOptimized(GX, GY);
-}
+        Filters::applyKernel(src, dst_no_opt, GX, GY, N);
+        Filters::applyOptimizedKernel(src, dst_opt, GX, GY, N);
 
-void Parser::test(std::string test_name, Filter* f){
-        test_all(f);
+        delete dst_no_opt;
+        delete dst_opt;
 }
 
 
