@@ -17,8 +17,8 @@ public:
         static void abs(Image* src, Image* dst);
         static void absSIMD(Image* src, Image* dst);
 
-        static void pow(Image* src, Image* dst, int32_t val);
-        static void powSIMD(Image* src, Image* dst, int32_t val);      
+        static void pow(Image* src, Image* dst, _Float32 val);
+        static void powSIMD(Image* src, Image* dst, _Float32 val);      
 };
 
 #endif

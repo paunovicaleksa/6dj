@@ -16,6 +16,7 @@ void Image::copyAlpha(Image* src, Image* dst){
         }    
 }
 
+
 inline bool __str_ends_in(std::string str, std::string ends){
 
         std::uint64_t pos = str.rfind('.');
@@ -93,7 +94,7 @@ void Image::write(){
         std::uint64_t pos = file_name.rfind('.');
         std::string write_name = file_name.substr(0, pos) + "_modified"; 
 
-        std::cout << "writing image-";
+        std::cout << write_name << std::endl;
 
         if(__str_ends_in(file_name.c_str(), ".jpg") || __str_ends_in(file_name.c_str(), ".JPG") || 
            __str_ends_in(file_name.c_str(), ".jpeg") || __str_ends_in(file_name.c_str(), ".JPEG")) {

@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cmath>
+#include <thread>
 
 void Filters::invert(Image* src, Image* dst){
         StartTimer(INVERT NO SIMD)
@@ -176,66 +177,40 @@ void Filters::applyOptimizedKernel(Image* src, Image* dst, int32_t* GX, int32_t*
         int32_t columns = (src->getWidth() * src->getHeight());
         int32_t width = src->getWidth();
         int32_t center = N/2;
- 
+        
         int32_t BLOCK_SIZE = CPU::getBlockSize();
 
-        int32_t row = 0;
-        int32_t column = 0;
 
         StartTimer(FILTER OPT)
 
-        for(int32_t block = 0; block < (width / BLOCK_SIZE); block++){
-                for(row = center; row < (rows - center); row++){
-                        for(column = (block * BLOCK_SIZE) + center; column < (width - center) 
-                        && column < ((block + 1) * BLOCK_SIZE); column++){
-                                double_t gx = 0;
-                                double_t gy = 0;
+        for(int32_t row_outer = center; row_outer < (rows - center); row_outer += BLOCK_SIZE){
+                for(int32_t col_outer = center; col_outer < (width - center); col_outer += BLOCK_SIZE){
+                        for(int32_t row = row_outer; row < (rows - center) && row < (row_outer + BLOCK_SIZE); row++){
+                                for(int32_t column = col_outer; column < (columns - center) && column < (col_outer + BLOCK_SIZE); column ++){
+                                        double_t gx = 0;
+                                        double_t gy = 0;
 
-                                for (int32_t i = 0; i < N; ++i ) {
-                                        for (int32_t j = 0; j < N; ++j ) {
-                                                int32_t image_row    = row + i - center;
-                                                int32_t image_column = column + j - center;
-                                                
-                                                int32_t index = image_row * width + image_column;
-                                                double_t image_value = (double_t)(src->red[index] + src->green[index] + src->blue[index])/3;
+                                        for (int32_t i = 0; i < N; ++i ) {
+                                                for (int32_t j = 0; j < N; ++j ) {
+                                                        int32_t image_row    = row + i - center;
+                                                        int32_t image_column = column + j - center;
+                                                        
+                                                        int32_t index = image_row * width + image_column;
+                                                        double_t image_value = (double_t)(src->red[index] + src->green[index] + src->blue[index])/3;
 
-                                                int32_t kernel_index = i * N + j;
+                                                        int32_t kernel_index = i * N + j;
 
-                                                gx += image_value * GX[kernel_index];
-                                                gy += image_value * GY[kernel_index];
+                                                        gx += image_value * GX[kernel_index];
+                                                        gy += image_value * GY[kernel_index];
+                                                }
                                         }
-                                }
-                                int32_t index = row * width + column;
-                                dst->red[index] = dst->green[index] = dst->blue[index] = (sqrt ( gx * gx + gy * gy ));  
-                        }
-
-                }
-        }
-        for (; row < ( rows - center ); ++row ) {
-                for (; column < (width - center); ++column ) {
-                        double_t gx = 0;
-                        double_t gy = 0;
-
-                        for (int32_t i = 0; i < N; ++i ) {
-                                for (int32_t j = 0; j < N; ++j ) {
-                                        int32_t image_row    = row + i - center;
-                                        int32_t image_column = column + j - center;
-
-                                        int32_t index = image_row * width + image_column;
-
-                                        double_t image_value = (double_t)(src->red[index] + src->green[index] + src->blue[index])/3;
-
-                                        int32_t kernel_index = i * N + j;
-
-                                        gx += image_value * GX[kernel_index];
-                                        gy += image_value * GY[kernel_index];
+                                        int32_t index = row * width + column;
+                                        dst->red[index] = dst->green[index] = dst->blue[index] = (sqrt ( gx * gx + gy * gy ));                
                                 }
                         }
-                        int32_t index = row * width + column;
-                        dst->red[index] = dst->green[index] = dst->blue[index] = (sqrt ( gx * gx + gy * gy ));
-                        
                 }
         }
+
         EndTimer
         if(src->getChannels() == 4) Image::copyAlpha(src, dst);
 }

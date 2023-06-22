@@ -96,10 +96,8 @@ __m256i _mm256_log_epi8(__m256i a, __m256 c){
 }
 
 static inline  __attribute__((always_inline)) 
-__m256i _mm256_pow_epi8(__m256i a, __m256i v){
-
-        __m256 v_f = _mm256_cvtepi32_ps(v);
-        
+__m256i _mm256_pow_epi8(__m256i a, __m256 v){
+  
         __m256i dst_a[4];
         _mm256_splitpu8_epi32(dst_a, a);
 
@@ -112,7 +110,7 @@ __m256i _mm256_pow_epi8(__m256i a, __m256i v){
                 __m256 a_f = _mm256_cvtepi32_ps(a_i);
 
                 __m256 val = log256_ps(a_f); //log(a)
-                val = _mm256_mul_ps(val, v_f); //val * log(a)
+                val = _mm256_mul_ps(val, v); //val * log(a)
                 val = exp256_ps(val); //e ** (val * log(a))
 
                 pow_a[i] = _mm256_cvtps_epi32(val);

@@ -49,7 +49,4 @@ private:
         uint8_t *img;
 };
 
-
-
-
 #endif

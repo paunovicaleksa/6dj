@@ -195,8 +195,8 @@ void MathFunc::absSIMD(Image* src, Image* dst){
         EndTimer
         if(src->getChannels() == 4) Image::copyAlpha(src, dst);
 }
-/* fix pow, no simd goes towards white, simd goes towards black, make both go towards black */
-void MathFunc::pow(Image* src, Image* dst, int32_t val){
+/* does not work for large values because of float overflow*/
+void MathFunc::pow(Image* src, Image* dst, _Float32 val){
         StartTimer(POW NO SIMD)
         
         double_t min = 0;
@@ -218,14 +218,14 @@ void MathFunc::pow(Image* src, Image* dst, int32_t val){
         if(src->getChannels() == 4) Image::copyAlpha(src, dst);
 }
 
-void MathFunc::powSIMD(Image* src, Image* dst, int32_t val){
+void MathFunc::powSIMD(Image* src, Image* dst, _Float32 val){
         StartTimer(POW SIMD)
        
         int32_t loop_size = ((src->getWidth() * src->getHeight()) / 32 ) * 32;
         double_t min = 0;
         double_t max = 255;
        
-        __m256i v_val = _mm256_set1_epi32(val);
+        __m256 v_val = _mm256_set1_ps(val);
 
         for(int32_t i = 0; i < loop_size; i += 32){
                

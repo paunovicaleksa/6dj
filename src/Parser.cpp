@@ -49,9 +49,10 @@ int Parser::parse(int32_t argc, char* argv[]){
                                         return 1;
                                 }
                                 std::uint64_t pos = filename.rfind('.');
-                                std::string write_name = filename.substr(0, pos) + "_modified_no_opt";
+                                std::string write_name = filename.substr(0, pos) + "_modified_no_opt" + filename.substr(pos, filename.back());
+
                                 dst_no_opt = new Image(write_name.c_str(), src->getWidth(), src->getHeight(), src->getChannels());
-                                write_name = filename.substr(0, pos) + "_modified_opt";
+                                write_name = filename.substr(0, pos) + "_modified_opt" + filename.substr(pos, filename.back());
                                 dst_opt = new Image(write_name.c_str(), src->getWidth(), src->getHeight(), src->getChannels());
                                 break;
                         }
@@ -120,7 +121,8 @@ int Parser::parse(int32_t argc, char* argv[]){
                                         printHelp();
                                         return 1;
                                 }
-                                uint8_t arg = std::stoi(optarg);
+                                _Float32 arg = std::stof(optarg);
+                                std::cout << arg << std::endl;
                                 MathFunc::pow(src, dst_no_opt, arg);
                                 MathFunc::powSIMD(src, dst_opt, arg);
                                 break;
@@ -201,7 +203,8 @@ int Parser::parse(int32_t argc, char* argv[]){
                                         std::cin >> GY[i];
                                 }
                                 Filters::applyKernel(src, dst_no_opt, GX, GY, N);                                  
-                                Filters::applyOptimizedKernel(src, dst_no_opt, GX, GY, N);       
+                                Filters::applyOptimizedKernel(src, dst_opt, GX, GY, N); 
+
                                 delete[] GX;
                                 delete[] GY;
                                 break;
@@ -217,12 +220,14 @@ int Parser::parse(int32_t argc, char* argv[]){
                 }
         }
         
-        dst_no_opt->write();
-        dst_opt->write();
+        if(src){
+                dst_no_opt->write();
+                dst_opt->write();
+                delete src;
+                delete dst_no_opt;
+                delete dst_opt;
+        }
 
-        delete src;
-        delete dst_no_opt;
-        delete dst_opt;
         return 0;
 }
 
