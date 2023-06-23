@@ -104,6 +104,7 @@ __m256i _mm256_pow_epi8(__m256i a, __m256 v){
         __m256i pow_a[4];
         
         __m256i v_one = _mm256_set1_epi32(1);
+        __m256 v_max = _mm256_set1_ps(255);
 
         for(int32_t i = 0; i < 4; i++){
                 __m256i a_i = _mm256_add_epi32(dst_a[i], v_one);
@@ -112,6 +113,8 @@ __m256i _mm256_pow_epi8(__m256i a, __m256 v){
                 __m256 val = log256_ps(a_f); //log(a)
                 val = _mm256_mul_ps(val, v); //val * log(a)
                 val = exp256_ps(val); //e ** (val * log(a))
+
+                val = _mm256_min_ps(v_max, val);
 
                 pow_a[i] = _mm256_cvtps_epi32(val);
         }

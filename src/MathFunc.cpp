@@ -195,22 +195,18 @@ void MathFunc::absSIMD(Image* src, Image* dst){
         EndTimer
         if(src->getChannels() == 4) Image::copyAlpha(src, dst);
 }
-/* does not work for large values because of float overflow*/
+/* does not work for large values because of float overflow, cant be bothered to fix this*/
 void MathFunc::pow(Image* src, Image* dst, _Float32 val){
         StartTimer(POW NO SIMD)
         
         double_t min = 0;
         double_t max = 255;
-        int16_t p_16;
 
         for(int32_t i = 0; i < (src->getWidth() * src->getHeight()); i++){
                 /* since downward conversion is undefined, make it behave like SIMD implementation */
-                p_16 = std::pow(src->red[i], val);
-                dst->red[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));
-                p_16 = std::pow(src->green[i], val);
-                dst->green[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));
-                p_16 = std::pow(src->blue[i], val);
-                dst->blue[i] = static_cast<uint8_t>(std::clamp((double_t)p_16, min, max));   
+                dst->red[i] = static_cast<uint8_t>(std::clamp(std::pow(src->red[i], val), min, max));
+                dst->green[i] = static_cast<uint8_t>(std::clamp(std::pow(src->green[i], val), min, max));
+                dst->blue[i] = static_cast<uint8_t>(std::clamp(std::pow(src->blue[i], val), min, max));   
         }
 
         EndTimer  
