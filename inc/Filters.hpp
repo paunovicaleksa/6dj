@@ -13,7 +13,6 @@ public:
 
         static void applyKernel(Image* src, Image* dst, int32_t* GX, int32_t* GY, int32_t N);
         static void applyOptimizedKernel(Image* src, Image* dst, int32_t* GX, int32_t* GY, int32_t N);
-
 };
 
 #endif
