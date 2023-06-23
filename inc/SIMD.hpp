@@ -114,6 +114,7 @@ __m256i _mm256_pow_epi8(__m256i a, __m256 v){
                 val = _mm256_mul_ps(val, v); //val * log(a)
                 val = exp256_ps(val); //e ** (val * log(a))
 
+                /* helps with conversion */
                 val = _mm256_min_ps(v_max, val);
 
                 pow_a[i] = _mm256_cvtps_epi32(val);

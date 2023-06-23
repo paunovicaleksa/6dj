@@ -195,7 +195,7 @@ void MathFunc::absSIMD(Image* src, Image* dst){
         EndTimer
         if(src->getChannels() == 4) Image::copyAlpha(src, dst);
 }
-/* does not work for large values because of float overflow, cant be bothered to fix this*/
+/* does not work for large values because of float overflow, cant be bothered to fix this */
 void MathFunc::pow(Image* src, Image* dst, _Float32 val){
         StartTimer(POW NO SIMD)
         
