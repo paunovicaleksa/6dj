@@ -9,10 +9,13 @@ Build the project with:
 ```bash
 make all
 ```
-# Usage
+## Usage
 
 To print the help message:
 
 ```bash
 ./6dj --help
 ```
+## Note
+
+This project uses the stb libraries for image processing. These libraries are included as header-only and require no separate installation.
